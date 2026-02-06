@@ -48,7 +48,7 @@ namespace FiturBaru {
 
     // 4. Inisialisasi Hook
     inline void Init() {
-        if (!g_Enabled) return; // Jangan cari offset jika fitur dimatikan
+        if (!g_Enabled) return;
 
         // Contoh penerapan hook untuk Boolean
         void* addrVisible = Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "UnitInstance", "get_IsVisible", 0);
