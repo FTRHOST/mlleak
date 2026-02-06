@@ -1,0 +1,4 @@
+#Wed Feb 04 01:55:55 UTC 2026
+base.0=/app/build/intermediates/dex/debug/mergeDexDebug/classes.dex
+path.0=classes.dex
+renamed.0=classes.dex
