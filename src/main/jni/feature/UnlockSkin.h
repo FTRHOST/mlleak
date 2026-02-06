@@ -32,9 +32,29 @@ namespace UnlockSkin {
         if (newInst) {
             newInst->iId = skinId;
             newInst->iLimitTime = 0;
+            newInst->iSource = 0;
+            newInst->iLimitTimeMagicChess = 0;
+            newInst->iGetTime = 0;
         }
         return newInst;
     }
+
+      void* hIsHaveSkin(void* instance, uint32_t skinId) {
+        void* ret = oIsHaveSkin(instance, skinId);
+        if (ret || !g_Enabled) return ret;
+
+        // Create fake instance if not owned
+        auto newInst = (CmdHeroSkin*)Il2CppCreateClassInstance("Assembly-CSharp.dll", "MTTDProto", "CmdHeroSkin");
+        if (newInst) {
+            newInst->iId = skinId;
+            newInst->iLimitTime = 0;
+            newInst->iSource = 0;
+            newInst->iLimitTimeMagicChess = 0;
+            newInst->iGetTime = 0;
+        }
+        return newInst;
+    }
+
 
     // Protection against sending skin-related data to server (Antiban)
     void hSendRawData(void* instance, uint32_t msgId, void* data, int size, int socketType, int packType, bool lock, int expSize) {
