@@ -26,7 +26,7 @@ LOCAL_C_INCLUDES := $(LOCAL_PATH)/include
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/include/Hook/Dobby
 
 # Libraries
-LOCAL_LDLIBS := -llog -landroid -latomic
+LOCAL_LDLIBS := -llog -landroid -latomic -lc++_static
 LOCAL_STATIC_LIBRARIES := dobby
 
 include $(BUILD_SHARED_LIBRARY)
