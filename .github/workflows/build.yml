@@ -18,7 +18,7 @@ jobs:
       - name: Setup Android NDK
         uses: nttld/setup-ndk@v1
         with:
-          ndk-version: r22 # Versi NDK yang stabil dan umum
+          ndk-version: r27
 
       - name: Build with NDK-Build
         run: |
