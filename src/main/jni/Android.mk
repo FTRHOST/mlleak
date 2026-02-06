@@ -27,8 +27,7 @@ LOCAL_C_INCLUDES += $(LOCAL_PATH)/include/Hook/Dobby
 
 # Libraries
 LOCAL_LDLIBS := -llog -landroid
-LOCAL_STATIC_LIBRARIES := dobby libc++_static
+LOCAL_LDFLAGS += -static-libstdc++
+LOCAL_STATIC_LIBRARIES := dobby
 
 include $(BUILD_SHARED_LIBRARY)
-
-$(call import-module,ndk/sources/cxx-stl/llvm-libc++)
