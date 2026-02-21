@@ -1,144 +1,214 @@
 #pragma once
-#include <vector>
-#include <set>
+#include "../Include.h"
+#include "../include/Utils/Unity/ByNameModding/Tools.h"
+#include "../include/Utils/Unity/ByNameModding/Il2Cpp.h"
+#include "../include/Utils/Logger.h"
 
 namespace UnlockSkin {
-    // --- Global Config ---
-    extern bool g_Enabled;
+
+    // ================= GLOBAL CONFIG =================
+    bool g_UnlockAll = true;
+
     uint32_t m_HeroID = 0;
     uint32_t m_SkinID = 0;
 
-    // --- Structs (Unity Layout) ---
-    struct CmdHeroSkin : Il2CppObject {
-        uint32_t iId, iLimitTime, iSource, iLimitTimeMagicChess, iGetTime;
+    // ================= OFFSETS =================
+    static size_t off_Skin_iId = 0;
+    static size_t off_Skin_iLimitTime = 0;
+    static size_t off_Skin_iSource = 0;
+    static size_t off_Skin_iLimitTimeMagicChess = 0;
+    static size_t off_Skin_iGetTime = 0;
+
+    static size_t off_PlayerInfo_uiSkinId = 0;
+    static size_t off_PlayerInfo_uiSelHero = 0;
+    static size_t off_PlayerInfo_iCamp = 0;
+
+    // ================= STRUCTS =================
+    // We use void* and offsets for flexibility
+    struct CmdHeroSkin {
+        // Placeholder
     };
 
-    struct CmdHeroStatue : Il2CppObject {
-        uint32_t iId, iLimitTime, iSource;
-    };
+    // ================= ORIGINAL FUNCTIONS =================
+    void* (*oGetHeroSkin)(void* unk, void* list, uint32_t skinid);
+    void* (*oIsHaveSkin)(void* unk, int32_t skinid);
+    void* (*oIsHaveSkinForever)(void* unk, int32_t skinid);
 
-    // --- Original Function Pointers ---
-    void* (*oGetHeroSkin)(void*, uintptr_t, uint32_t);
-    void* (*oIsHaveSkin)(void*, uint32_t);
-    void* (*oIsHaveSkinForever)(void*, uint32_t);
-    void (*oSendRawData)(void*, uint32_t, void*, int, int, int, bool, int);
+    bool (*oIsForbidSkin)(void* unk, uint32_t skinid, bool filterLuaCheck);
+    bool (*oIsForbidHeros)(void* unk, uint32_t heroid);
+    bool (*oIsLimitActiveHero)(void* unk, uint32_t heroid);
+    bool (*oIsHeroInShop)(void* unk, uint32_t heroid);
+    bool (*oIsCanUseSkin)(void* unk, int32_t heroid);
 
-    // ==========================================
-    // TIPE 1: Untuk fungsi dengan 1 Argumen C# (Total 2: Instance + Arg1)
-    // Contoh: IsForbidHeros(int heroid)
-    // ==========================================
-    #define DEFINE_HOOK_TRUE_ARGS_1(FUNC_NAME) \
-        bool (*o##FUNC_NAME)(void* unk, void* arg1); \
-        bool h##FUNC_NAME(void* unk, void* arg1) { \
-            if (g_Enabled) { \
-                static bool logged = false; \
-                if (!logged) { \
-                    __android_log_print(ANDROID_LOG_INFO, "StealthMod", "Active: %s (Arg: 1)", #FUNC_NAME); \
-                    logged = true; \
-                } \
-                return true; \
-            } \
-            return o##FUNC_NAME(unk, arg1); \
+    uint32_t (*oGetExpiredCardSkinLimitTime)(void* unk, uint32_t skinId);
+    void (*oRefreshSkinDic)(void* thiz, uint32_t heroId, uint32_t skinId, uint64_t lUid);
+
+    void (*oSendSelectSkin)(void* thiz, uint32_t skinid, uint32_t heroid);
+    void (*oSendUseSkin)(void* thiz, int32_t skinid, bool bForce);
+    void (*oSetPlayerData)(void* thiz, void* playerinfo, uint32_t selfCamp);
+
+    // ================= HELPER FUNCTIONS =================
+    void InitOffsets() {
+        if (off_Skin_iId == 0) {
+            off_Skin_iId = Il2CppGetFieldOffset("Assembly-CSharp.dll", "MTTDProto", "CmdHeroSkin", "iId");
+            off_Skin_iLimitTime = Il2CppGetFieldOffset("Assembly-CSharp.dll", "MTTDProto", "CmdHeroSkin", "iLimitTime");
+            off_Skin_iSource = Il2CppGetFieldOffset("Assembly-CSharp.dll", "MTTDProto", "CmdHeroSkin", "iSource");
+            off_Skin_iLimitTimeMagicChess = Il2CppGetFieldOffset("Assembly-CSharp.dll", "MTTDProto", "CmdHeroSkin", "iLimitTimeMagicChess");
+            off_Skin_iGetTime = Il2CppGetFieldOffset("Assembly-CSharp.dll", "MTTDProto", "CmdHeroSkin", "iGetTime");
+
+            off_PlayerInfo_uiSkinId = Il2CppGetFieldOffset("Assembly-CSharp.dll", "MTTDProto", "BattlePlayerInfo", "uiSkinId");
+            off_PlayerInfo_uiSelHero = Il2CppGetFieldOffset("Assembly-CSharp.dll", "MTTDProto", "BattlePlayerInfo", "uiSelHero");
+            off_PlayerInfo_iCamp = Il2CppGetFieldOffset("Assembly-CSharp.dll", "MTTDProto", "BattlePlayerInfo", "iCamp");
         }
-
-    DEFINE_HOOK_TRUE_ARGS_1(IsCanUseSkin)
-    DEFINE_HOOK_TRUE_ARGS_1(GetLeaderSkinBForbid)
-    DEFINE_HOOK_TRUE_ARGS_1(BRankHeroCanUse)
-    DEFINE_HOOK_TRUE_ARGS_1(CheckReputationUnlockSkin)
-    DEFINE_HOOK_TRUE_ARGS_1(IsLimitActiveHero)
-    DEFINE_HOOK_TRUE_ARGS_1(IsHeroInShop)
-
-
-    // --- Hook Implementations ---
-    void* hGetHeroSkin(void* unk, uintptr_t m_heroskins, uint32_t skinid) {
-        void* ret = oGetHeroSkin(unk, m_heroskins, skinid);
-        if (ret || !g_Enabled) return ret;
-
-        // Create fake instance if not owned
-        auto newInst = (CmdHeroSkin*)Il2CppCreateClassInstance("Assembly-CSharp.dll", "MTTDProto", "CmdHeroSkin");
-        if (newInst) {
-            newInst->iId = skinid;
-            newInst->iLimitTime = 0;
-            newInst->iSource = 0;
-            newInst->iLimitTimeMagicChess = 0;
-            newInst->iGetTime = 0;
-        }
-        return newInst;
     }
 
-    void* hIsHaveSkin(void* unk, uint32_t skinid) {
+    void* CreateFakeSkin(uint32_t skinId) {
+        InitOffsets();
+        void* instance = Il2CppCreateClassInstance("Assembly-CSharp.dll", "MTTDProto", "CmdHeroSkin");
+        if (instance) {
+            if (off_Skin_iId) *(uint32_t*)((uintptr_t)instance + off_Skin_iId) = skinId;
+            if (off_Skin_iLimitTime) *(uint32_t*)((uintptr_t)instance + off_Skin_iLimitTime) = 0; // 0 = Permanent
+            if (off_Skin_iSource) *(uint32_t*)((uintptr_t)instance + off_Skin_iSource) = 1;
+            if (off_Skin_iLimitTimeMagicChess) *(uint32_t*)((uintptr_t)instance + off_Skin_iLimitTimeMagicChess) = 0;
+            if (off_Skin_iGetTime) *(uint32_t*)((uintptr_t)instance + off_Skin_iGetTime) = 0;
+        }
+        return instance;
+    }
+
+    // ================= HOOKS =================
+
+    // --- Data Provider ---
+    void* hGetHeroSkin(void* unk, void* list, uint32_t skinid) {
+        void* ret = oGetHeroSkin(unk, list, skinid);
+        if (g_UnlockAll) {
+            if (ret == nullptr) return CreateFakeSkin(skinid);
+            return CreateFakeSkin(skinid);
+        }
+        return ret;
+    }
+
+    void* hIsHaveSkin(void* unk, int32_t skinid) {
         void* ret = oIsHaveSkin(unk, skinid);
-        if (ret || !g_Enabled) return ret;
-
-        // Create fake instance if not owned
-        auto newInst = (CmdHeroSkin*)Il2CppCreateClassInstance("Assembly-CSharp.dll", "MTTDProto", "CmdHeroSkin");
-        if (newInst) {
-            newInst->iId = skinid;
-            newInst->iLimitTime = 0;
-            newInst->iSource = 0;
-            newInst->iLimitTimeMagicChess = 0;
-            newInst->iGetTime = 0;
+        if (g_UnlockAll) {
+            return CreateFakeSkin((uint32_t)skinid);
         }
-        return newInst;
+        return ret;
     }
 
-    void* hIsHaveSkinForever(void* unk, uint32_t skinid) {
+    void* hIsHaveSkinForever(void* unk, int32_t skinid) {
         void* ret = oIsHaveSkinForever(unk, skinid);
-        if (ret || !g_Enabled) return ret;
-
-        // Create fake instance if not owned
-        auto newInst = (CmdHeroSkin*)Il2CppCreateClassInstance("Assembly-CSharp.dll", "MTTDProto", "CmdHeroSkin");
-        if (newInst) {
-            newInst->iId = skinid;
-            newInst->iLimitTime = 0;
-            newInst->iSource = 0;
-            newInst->iLimitTimeMagicChess = 0;
-            newInst->iGetTime = 0;
+        if (g_UnlockAll) {
+            return CreateFakeSkin((uint32_t)skinid);
         }
-        return newInst;
+        return ret;
     }
 
-
-    // Protection against sending skin-related data to server (Antiban)
-    void hSendRawData(void* instance, uint32_t msgId, void* data, int size, int socketType, int packType, bool lock, int expSize) {
-        static const std::set<uint32_t> blockedMsgs = {
-            1015, 1016, 1019, 1020, 1031, 1032, 1035, 1036, 1160, 1161, 1162, 1163,
-            1208, 10017, 10018, 10192, 10193, 10603, 10604, 19457, 19458, 19459, 19460
-        };
-
-        if (g_Enabled && blockedMsgs.count(msgId)) return;
-        oSendRawData(instance, msgId, data, size, socketType, packType, lock, expSize);
+    // --- Bypass & Limit ---
+    bool hIsForbidSkin(void* unk, uint32_t skinid, bool filterLuaCheck) {
+        if (g_UnlockAll) return false;
+        return oIsForbidSkin(unk, skinid, filterLuaCheck);
     }
 
-    // --- Initialization ---
-    inline void Init() {
-        if (!g_Enabled) return;
+    bool hIsForbidHeros(void* unk, uint32_t heroid) {
+        if (g_UnlockAll) return false;
+        return oIsForbidHeros(unk, heroid);
+    }
 
-        void* addrGetSkin = Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "SystemData", "GetHeroSkin", 2);
-        if (addrGetSkin) Tools::Hook(addrGetSkin, (void*)hGetHeroSkin, (void**)&oGetHeroSkin);
+    bool hIsLimitActiveHero(void* unk, uint32_t heroid) {
+        if (g_UnlockAll) return false;
+        return oIsLimitActiveHero(unk, heroid);
+    }
 
-        void* addrIsHaveSkin = Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "SystemData", "IsHaveSkin", 1);
-        if(addrIsHaveSkin) Tools::Hook(addrIsHaveSkin, (void*)hIsHaveSkin, (void**)&oIsHaveSkin);
-        
-        void* addrIsHaveSkinForever = Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "SystemData", "IsHaveSkinForever", 1);
-        if(addrIsHaveSkinForever) Tools::Hook(addrIsHaveSkinForever, (void*)hIsHaveSkinForever, (void**)&oIsHaveSkinForever);
+    bool hIsHeroInShop(void* unk, uint32_t heroid) {
+        if (g_UnlockAll) return true;
+        return oIsHeroInShop(unk, heroid);
+    }
 
-        void* addrIsCanUse = Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "SystemData", "IsCanUseSkin", 1);
-        if(addrIsCanUse) Tools::Hook(addrIsCanUse, (void*)hIsCanUseSkin, (void**)&oIsCanUseSkin);
+    bool hIsCanUseSkin(void* unk, int32_t heroid) {
+        if (g_UnlockAll) return true;
+        return oIsCanUseSkin(unk, heroid);
+    }
 
-        void* addrBRankHeroCanUse = Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "UIRankHero", "BRankHeroCanUse", 1);
-        if(addrBRankHeroCanUse) Tools::Hook(addrBRankHeroCanUse, (void*)hBRankHeroCanUse, (void**)&oBRankHeroCanUse);
+    uint32_t hGetExpiredCardSkinLimitTime(void* unk, uint32_t skinId) {
+        if (g_UnlockAll) return 0;
+        return oGetExpiredCardSkinLimitTime(unk, skinId);
+    }
 
-        void* addrCheckReputationUnlockSkin = Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "SystemData", "CheckReputationUnlockSkin", 1);
-        if(addrCheckReputationUnlockSkin) Tools::Hook(addrCheckReputationUnlockSkin, (void*)hCheckReputationUnlockSkin, (void**)&oCheckReputationUnlockSkin);
+    void hRefreshSkinDic(void* thiz, uint32_t heroId, uint32_t skinId, uint64_t lUid) {
+        oRefreshSkinDic(thiz, heroId, skinId, lUid);
+    }
 
-        void* addrIsLimitActiveHero = Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "SystemData", "IsLimitActiveHero", 1);
-        if(addrIsLimitActiveHero) Tools::Hook(addrIsLimitActiveHero, (void*)hIsLimitActiveHero, (void**)&oIsLimitActiveHero);
+    // --- Selection Spoofing ---
+    void hSendSelectSkin(void* thiz, uint32_t skinid, uint32_t heroid) {
+        if (g_UnlockAll) {
+            m_HeroID = heroid;
+            m_SkinID = skinid;
+            oSendSelectSkin(thiz, 0, heroid);
+            return;
+        }
+        oSendSelectSkin(thiz, skinid, heroid);
+    }
 
-        void* addrIsHeroInShop = Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "SystemData", "IsHeroInShop", 1);
-        if(addrIsHeroInShop) Tools::Hook(addrIsHeroInShop, (void*)hIsHeroInShop, (void**)&oIsHeroInShop);
+    void hSendUseSkin(void* thiz, int32_t skinId, bool bForce) {
+        if (g_UnlockAll) {
+            m_SkinID = (uint32_t)skinId;
+            oSendUseSkin(thiz, 0, bForce);
+            return;
+        }
+        oSendUseSkin(thiz, skinId, bForce);
+    }
 
-        void* addrSendData = Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "GameServerConfig", "SendRawData", 7);
-        if (addrSendData) Tools::Hook(addrSendData, (void*)hSendRawData, (void**)&oSendRawData);
+    // --- Injection ---
+    void hSetPlayerData(void* thiz, void* playerinfo, uint32_t selfCamp) {
+        // Call original first to populate data
+        oSetPlayerData(thiz, playerinfo, selfCamp);
+
+        if (g_UnlockAll && m_SkinID != 0 && playerinfo != nullptr) {
+            InitOffsets();
+
+            uint32_t playerSelHero = 0;
+            if (off_PlayerInfo_uiSelHero) {
+                playerSelHero = *(uint32_t*)((uintptr_t)playerinfo + off_PlayerInfo_uiSelHero);
+            }
+
+            uint32_t playerCamp = 0;
+            if (off_PlayerInfo_iCamp) {
+                playerCamp = *(uint32_t*)((uintptr_t)playerinfo + off_PlayerInfo_iCamp);
+            }
+
+            // If hero matches and camp matches selfCamp (which is passed in)
+            if (playerSelHero == m_HeroID && playerCamp == selfCamp) {
+                if (off_PlayerInfo_uiSkinId) {
+                    *(uint32_t*)((uintptr_t)playerinfo + off_PlayerInfo_uiSkinId) = m_SkinID;
+                }
+            }
+        }
+    }
+
+    // ================= INITIALIZATION =================
+    void Init() {
+        // Data Provider
+        // Il2CppGetMethodOffset(image, namespace, class, method, args)
+        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "SystemData", "GetHeroSkin", 2), (void*)hGetHeroSkin, (void**)&oGetHeroSkin);
+        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "SystemData", "IsHaveSkin", 1), (void*)hIsHaveSkin, (void**)&oIsHaveSkin);
+        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "SystemData", "IsHaveSkinForever", 1), (void*)hIsHaveSkinForever, (void**)&oIsHaveSkinForever);
+
+        // Bypass
+        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "SystemData", "IsForbidSkin", 2), (void*)hIsForbidSkin, (void**)&oIsForbidSkin);
+        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "SystemData", "IsForbidHeros", 1), (void*)hIsForbidHeros, (void**)&oIsForbidHeros);
+        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "SystemData", "IsLimitActiveHero", 1), (void*)hIsLimitActiveHero, (void**)&oIsLimitActiveHero);
+        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "SystemData", "IsHeroInShop", 1), (void*)hIsHeroInShop, (void**)&oIsHeroInShop);
+        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "SystemData", "IsCanUseSkin", 1), (void*)hIsCanUseSkin, (void**)&oIsCanUseSkin);
+
+        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "SystemData", "GetExpiredCardSkinLimitTime", 1), (void*)hGetExpiredCardSkinLimitTime, (void**)&oGetExpiredCardSkinLimitTime);
+        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "UIRankHero", "RefreshSkinDic", 3), (void*)hRefreshSkinDic, (void**)&oRefreshSkinDic);
+
+        // Selection Spoofing
+        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "ChooseHeroMgr", "SendSelectSkin", 2), (void*)hSendSelectSkin, (void**)&oSendSelectSkin);
+        // SendUseSkin is in private class UIRankHero.ChangeShow (UIRankHero+ChangeShow)
+        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "UIRankHero+ChangeShow", "SendUseSkin", 2), (void*)hSendUseSkin, (void**)&oSendUseSkin);
+
+        // Injection
+        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "BattleReceiveMessage", "SetPlayerData", 2), (void*)hSetPlayerData, (void**)&oSetPlayerData);
     }
 }
