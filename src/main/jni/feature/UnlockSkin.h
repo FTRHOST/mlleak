@@ -188,25 +188,27 @@ namespace UnlockSkin {
     // ================= INITIALIZATION =================
     void Init() {
         // Data Provider
-        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "SystemData", "GetHeroSkin", 2), (void*)hGetHeroSkin, (void**)&oGetHeroSkin);
-        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "SystemData", "IsHaveSkin", 1), (void*)hIsHaveSkin, (void**)&oIsHaveSkin);
-        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "SystemData", "IsHaveSkinForever", 1), (void*)hIsHaveSkinForever, (void**)&oIsHaveSkinForever);
+        // Il2CppGetMethodOffset(image, namespace, class, method, args)
+        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "SystemData", "GetHeroSkin", 2), (void*)hGetHeroSkin, (void**)&oGetHeroSkin);
+        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "SystemData", "IsHaveSkin", 1), (void*)hIsHaveSkin, (void**)&oIsHaveSkin);
+        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "SystemData", "IsHaveSkinForever", 1), (void*)hIsHaveSkinForever, (void**)&oIsHaveSkinForever);
 
         // Bypass
-        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "SystemData", "IsForbidSkin", 2), (void*)hIsForbidSkin, (void**)&oIsForbidSkin);
-        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "SystemData", "IsForbidHeros", 1), (void*)hIsForbidHeros, (void**)&oIsForbidHeros);
-        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "SystemData", "IsLimitActiveHero", 1), (void*)hIsLimitActiveHero, (void**)&oIsLimitActiveHero);
-        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "SystemData", "IsHeroInShop", 1), (void*)hIsHeroInShop, (void**)&oIsHeroInShop);
-        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "SystemData", "IsCanUseSkin", 1), (void*)hIsCanUseSkin, (void**)&oIsCanUseSkin);
+        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "SystemData", "IsForbidSkin", 2), (void*)hIsForbidSkin, (void**)&oIsForbidSkin);
+        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "SystemData", "IsForbidHeros", 1), (void*)hIsForbidHeros, (void**)&oIsForbidHeros);
+        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "SystemData", "IsLimitActiveHero", 1), (void*)hIsLimitActiveHero, (void**)&oIsLimitActiveHero);
+        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "SystemData", "IsHeroInShop", 1), (void*)hIsHeroInShop, (void**)&oIsHeroInShop);
+        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "SystemData", "IsCanUseSkin", 1), (void*)hIsCanUseSkin, (void**)&oIsCanUseSkin);
 
-        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "SystemData", "GetExpiredCardSkinLimitTime", 1), (void*)hGetExpiredCardSkinLimitTime, (void**)&oGetExpiredCardSkinLimitTime);
-        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "UIRankHero", "RefreshSkinDic", 3), (void*)hRefreshSkinDic, (void**)&oRefreshSkinDic);
+        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "SystemData", "GetExpiredCardSkinLimitTime", 1), (void*)hGetExpiredCardSkinLimitTime, (void**)&oGetExpiredCardSkinLimitTime);
+        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "UIRankHero", "RefreshSkinDic", 3), (void*)hRefreshSkinDic, (void**)&oRefreshSkinDic);
 
         // Selection Spoofing
-        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "ChooseHeroMgr", "SendSelectSkin", 2), (void*)hSendSelectSkin, (void**)&oSendSelectSkin);
-        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "CommonDownloadMgr", "SendUseSkin", 2), (void*)hSendUseSkin, (void**)&oSendUseSkin);
+        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "ChooseHeroMgr", "SendSelectSkin", 2), (void*)hSendSelectSkin, (void**)&oSendSelectSkin);
+        // SendUseSkin is in private class UIRankHero.ChangeShow (UIRankHero+ChangeShow)
+        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "UIRankHero+ChangeShow", "SendUseSkin", 2), (void*)hSendUseSkin, (void**)&oSendUseSkin);
 
         // Injection
-        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "BattleReceiveMessage", "SetPlayerData", 2), (void*)hSetPlayerData, (void**)&oSetPlayerData);
+        Tools::Hook(Il2CppGetMethodOffset("Assembly-CSharp.dll", "", "BattleReceiveMessage", "SetPlayerData", 2), (void*)hSetPlayerData, (void**)&oSetPlayerData);
     }
 }
